@@ -3,15 +3,28 @@
 <head>
 	<title>Computable Playground</title>
 
+	<link rel="stylesheet" type="text/css" href="style/main.css" />
+
 	<script type="text/javascript"
 		src="https://cdn.rawgit.com/brython-dev/brython/stable/www/src/brython.js">
 	</script>
 	<script type="text/javascript"
 		src="https://cdn.rawgit.com/brython-dev/brython/stable/www/src/brython_stdlib.js">
 	</script>
+
+	<script type="text/python3" src="scripts/init.py"></script>
 </head>
-<body onload="brython(1);">
-	<h1>Coming soon!</h1>
+<body onload="brython({debug: 1, pythonpath: ['scripts/', 'Computable/']});">
 	<h2>Powered by <a href="http://brython.info/">Brython</a></h2>
+	<div id="content">
+		<div></div>
+		<div id="maindiv">
+			<canvas id="maincanvas">
+				Sorry, your browser does not support Canvas :/
+			</canvas>
+		</div>
+		<div></div>
+	</div>
+	<h2>Under construction!</h2>
 </body>
 </html>
