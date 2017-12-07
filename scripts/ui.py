@@ -1,6 +1,18 @@
 from itertools import chain
-from math import pi, sin, cos, atan2
+from collections import namedtuple
+from math import pi, sin, cos, atan2, sqrt
 from browser import document
+
+class Button(object):
+	def __init__(self, press, x, y, w, h):
+		self.x = x
+		self.y = y
+		self.w = w
+		self.h = h
+		self.press = press
+
+	def contains_point(self, x, y):
+		return abs(x - self.x) <= self.w/2 and abs(y - self.y) <= self.h/2
 
 class Node(object):
 	NO_HIGHLIGHT = 0
@@ -51,6 +63,7 @@ class Node(object):
 		c = Connection(self, other, args)
 		self._outgoing_connections.append(c)
 		other._incoming_connections.append(c)
+		return c
 
 	def draw(self, context):
 		context.save()
@@ -98,13 +111,26 @@ class Node(object):
 		for con in self._outgoing_connections:
 			con.draw(context)
 
+	def contains_point(self, x, y):
+		x -= self.x
+		y -= self.y
+		return x*x + y*y <= Node.radius*Node.radius
+
 class Connection(object):
+	NO_HIGHLIGHT = 0
+	SELECTED = 1
+
+	selection_highlight_color = '#DD4444A0'
+	selection_highlight_width = 6
+
 	head_width = 10
 	head_length = 15
 	head_angle = atan2(head_width/2, head_length)
 	line_thickness = 2
+	collider_width = 8
 
 	def __init__(self, start_node, end_node, info):
+		self.highlight = Connection.NO_HIGHLIGHT
 		self.start_node = start_node
 		self.end_node = end_node
 		if info is None:
@@ -119,25 +145,28 @@ class Connection(object):
 
 		dy = self.end_point[1] - self.start_point[1]
 		dx = self.end_point[0] - self.start_point[0]
-		shaft_angle = atan2(dy, dx)
-		self.start_point[0] += self.start_node.radius * cos(shaft_angle)
-		self.start_point[1] += self.start_node.radius * sin(shaft_angle)
-		self.end_point[0] -= self.end_node.radius * cos(shaft_angle)
-		self.end_point[1] -= self.end_node.radius * sin(shaft_angle)
+		self.shaft_angle = atan2(dy, dx)
+		self.start_point[0] += self.start_node.radius * cos(self.shaft_angle)
+		self.start_point[1] += self.start_node.radius * sin(self.shaft_angle)
+		self.end_point[0] -= self.end_node.radius * cos(self.shaft_angle)
+		self.end_point[1] -= self.end_node.radius * sin(self.shaft_angle)
 
 		self.head_points = [
 			[self.end_point[0], self.end_point[1]],
 			[self.end_point[0], self.end_point[1]]]
 
 		self.head_points[0][0] += Connection.head_length * cos(
-			pi + shaft_angle - Connection.head_angle)
+			pi + self.shaft_angle - Connection.head_angle)
 		self.head_points[0][1] += Connection.head_length * sin(
-			pi + shaft_angle - Connection.head_angle)
+			pi + self.shaft_angle - Connection.head_angle)
 
 		self.head_points[1][0] += Connection.head_length * cos(
-			pi + shaft_angle + Connection.head_angle)
+			pi + self.shaft_angle + Connection.head_angle)
 		self.head_points[1][1] += Connection.head_length * sin(
-			pi + shaft_angle + Connection.head_angle)
+			pi + self.shaft_angle + Connection.head_angle)
+
+	def set_highlight(self, highlight):
+		self.highlight = highlight
 
 	def draw_info(self):
 		pass
@@ -145,6 +174,13 @@ class Connection(object):
 	def draw(self, context):
 		context.save()
 		# TODO allow curved arrows
+		if self.highlight & Connection.SELECTED:
+			context.beginPath()
+			context.strokeStyle = Connection.selection_highlight_color
+			context.lineWidth = Connection.selection_highlight_width
+			context.moveTo(*self.start_point)
+			context.lineTo(*self.end_point)
+			context.stroke()
 		context.beginPath()
 		context.strokeStyle = '#000000'
 		context.lineWidth = Connection.line_thickness
@@ -157,3 +193,19 @@ class Connection(object):
 		context.stroke()
 		context.restore()
 
+	def contains_point(self, x, y):
+		middle_point = (
+			(self.start_point[0] + self.end_point[0]) / 2,
+			(self.start_point[1] + self.end_point[1]) / 2)
+		xlen = self.end_point[0] - self.start_point[0]
+		ylen = self.end_point[1] - self.start_point[1]
+		shaft_length = sqrt(xlen*xlen + ylen*ylen)
+
+		x -= middle_point[0]
+		y -= middle_point[1]
+
+		u = cos(-self.shaft_angle)*x - sin(-self.shaft_angle)*y
+		v = sin(-self.shaft_angle)*x + cos(-self.shaft_angle)*y
+
+		return abs(u) <= shaft_length/2 \
+			and abs(v) <= Connection.collider_width/2

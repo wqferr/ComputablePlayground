@@ -26,21 +26,10 @@
 		</div>
 		<div></div>
 		<script type="text/python3">
-			from ui import Node
+			from playground import Playground
 			from browser import document
 
-			canvas = document['maincanvas']
-			context = canvas.getContext('2d')
-
-			n0 = Node(30, 30, 'q0')
-			n1 = Node(80, 120, 'q1', border_thickness=3)
-			n0.connect(n1, None)
-
-			n0.set_highlight(Node.SELECTED | Node.ACTIVE)
-			n1.set_highlight(Node.ACTIVE)
-			n0.draw(context)
-			n1.draw(context)
-			n0.draw_outgoing_connections(context)
+			Playground(document['maincanvas']).draw()
 		</script>
 	</div>
 </body>
