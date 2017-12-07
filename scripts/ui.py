@@ -46,14 +46,11 @@ class Node(object):
 		self._outgoing_connections = []
 		self._incoming_connections = []
 
-	def move_to(self, x, y):
-		self.x = x
-		self.y = y
+	def translate(self, dx, dy):
+		self.x += dx
+		self.y += dy
 
-		for con in chain(
-			self._outgoing_connections,
-			self._incoming_connections):
-
+		for con in chain(self._outgoing_connections,self._incoming_connections):
 			con.update()
 
 	def set_highlight(self, highlight):
